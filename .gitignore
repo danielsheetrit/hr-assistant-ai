@@ -30,4 +30,4 @@ ENV/
 # Other
 *.pyc
 .DS_Store
-.env
+*.env
