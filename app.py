@@ -20,6 +20,9 @@ messages = [
 @app.route('/')
 def chat():
     question = request.args.get('question')
+    if not question:
+        return jsonify({'data': 'no question provided'})
+
     messages.append({"role": "user", "content": f"{question}"})
 
     response = openai.ChatCompletion.create(
