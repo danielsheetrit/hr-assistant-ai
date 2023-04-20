@@ -36,4 +36,5 @@ def chat():
     return jsonify({'data': answer})
 
 
-app.run()
+if __name__ == '__main__':
+    app.run(debug=True)
