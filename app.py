@@ -1,5 +1,7 @@
 import openai
 from flask import Flask, jsonify, request
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
 # local imports
 from system_prompt import s_prompt
@@ -8,25 +10,29 @@ from config import Config
 app = Flask(__name__)
 app.config.from_object(Config)
 
-# openai config
 openai.api_key = app.config['OPEN_AI_SECRET']
+client = MongoClient(app.config['MONGO_URI'], server_api=ServerApi('1'))
 
-messages = [
-    {"role": "system", "content": f"{s_prompt}"},
-    {"role": "assistant", "content": "How can I help you today?"}
-]
+# Send a ping to confirm a successful connection
+try:
+    client.admin.command('ping')
+    print("[MONGO_DB] You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
 
-
-@app.route('/')
-def helloworld():
-    return jsonify({'data': 'helloworld'})
+# chat route
 
 
 @app.route('/chat')
 def chat():
     question = request.args.get('question')
     if not question:
-        return jsonify({'data': 'no question provided'})
+        return jsonify({'msg': 'No question provided'})
+
+    messages = [
+        {"role": "system", "content": f"{s_prompt}"},
+        {"role": "assistant", "content": "How can I help you today?"}
+    ]
 
     messages.append({"role": "user", "content": f"{question}"})
 
@@ -42,6 +48,8 @@ def chat():
     messages.append({"role": "assistant", "content": f"{answer}"})
 
     return jsonify({'data': answer})
+
+# dialog route
 
 
 if __name__ == '__main__':
