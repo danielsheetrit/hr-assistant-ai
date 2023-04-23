@@ -1,5 +1,4 @@
 from datetime import datetime
-from system_prompt import s_prompt
 
 
 class Dialog:
@@ -16,8 +15,8 @@ class Dialog:
                          "created_at": datetime.now()})
         self.last_msg = datetime.now()
 
-    def get_chat(self):
-        return self.chat
+    def get_chat_copy(self):
+        return self.chat[:]
 
     def to_dict(self):
         return {
@@ -27,14 +26,3 @@ class Dialog:
             "created_at": self.created_at,
             "chat_color": self.chat_color,
         }
-
-
-def get_initialized_dialog(question):
-    messages = [
-        {"role": "system", "content": f"{s_prompt}", "created_at": datetime.now()},
-        {"role": "assistant", "content": "How can I help you today?",
-            "created_at": datetime.now()},
-        {"role": "user", "content": f"{question}", "created_at": datetime.now()}
-    ]
-    dialog = Dialog(subject="Test dialog", chat=messages)
-    return dialog
