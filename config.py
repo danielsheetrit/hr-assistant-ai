@@ -8,7 +8,8 @@ class Config(object):
     DEBUG = False
     TESTING = False
     OPEN_AI_SECRET = os.getenv('OPEN_AI_SECRET')
-    MONGO_URI= os.getenv('MONGO_URI')
+    MONGO_URI = os.getenv('MONGO_URI')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 class ProductionConfig(Config):
