@@ -32,4 +32,3 @@ ENV/
 .DS_Store
 *.env
 .vercel
-vercel.json
