@@ -31,3 +31,5 @@ ENV/
 *.pyc
 .DS_Store
 *.env
+.vercel
+vercel.json

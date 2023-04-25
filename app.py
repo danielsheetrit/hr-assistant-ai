@@ -54,6 +54,11 @@ def token_required(f):
     return decorated
 
 
+@app.route('/', methods=['GET'])
+def hello():
+    return jsonify({'msg': 'Hello'})
+
+
 @app.route('/register', methods=['POST'])
 def regsiter():
     data = request.get_json()
