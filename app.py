@@ -1,3 +1,8 @@
+import logging
+import sys
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+
+logging.info("Starting")
 import jwt
 import openai
 from flask import Flask, jsonify, request
@@ -6,28 +11,35 @@ from functools import wraps
 from bson.json_util import dumps
 from datetime import datetime, timedelta
 from flask_bcrypt import Bcrypt
-
+logging.info("First imports")
 # local imports
 from config import Config
 from controllers.dialog import Dialog
 from system_prompt import hr_prompt
 from chat import get_chat, get_dialog_subject
 from validations import chat_validations
+logging.info("sec imports")
 
 # mongo
 from mongo import initialize_db
+logging.info("mongo import")
 
 app = Flask(__name__)
 app.config.from_object(Config)
+logging.info("app ")
 
 bcrypt = Bcrypt(app)
 openai.api_key = app.config['OPEN_AI_SECRET']
+logging.info("Bcrypt ")
 
 # collections
+logging.info("initialize_db ")
+
 collections = initialize_db(app)
 dialogs_collection = collections["dialogs_coll"]
 users_collection = collections["users_coll"]
 prompts_collection = collections["prompts_coll"]
+logging.info("finish initialize_db ")
 
 
 def token_required(f):
@@ -233,4 +245,4 @@ def prompts(current_user):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
