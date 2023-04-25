@@ -27,6 +27,7 @@ openai.api_key = app.config['OPEN_AI_SECRET']
 collections = initialize_db(app)
 dialogs_collection = collections["dialogs_coll"]
 users_collection = collections["users_coll"]
+prompts_collection = collections["prompts_coll"]
 
 
 def token_required(f):
@@ -110,7 +111,7 @@ def login():
     return jsonify({'token': token, 'user': dumps(user)}), 200
 
 
-@app.route('/chat/initialize')
+@app.route('/chat/initialize', methods=['GET'])
 @token_required
 def chat_initialize(current_user):
     # args
@@ -150,9 +151,9 @@ def chat_initialize(current_user):
     return jsonify({"chat": dialog.chat})
 
 
-@app.route('/chat')
+@app.route('/chat', methods=['GET'])
 @token_required
-def chat():
+def chat(current_user):
     # args
     dialog_id = request.args.get('dialog_id')
     question = request.args.get('question')
@@ -196,6 +197,34 @@ def chat():
     )
 
     return jsonify({'chat': dialog.chat})
+
+
+@app.route("/dialogs", methods=['GET'])
+@token_required
+def dialogs(current_user):
+    dialogs = dialogs_collection.find(
+        {"user_id": ObjectId(current_user["_id"])})
+    dialogs = list(dialogs)
+    return jsonify({'dialogs': dumps(dialogs)})
+
+
+@app.route("/dialogs", methods=['DELETE'])
+@token_required
+def delete_dialogs(current_user):
+    result = dialogs_collection.delete_many({"user_id": current_user["_id"]})
+    if result.deleted_count > 0:
+        return jsonify({"message": f"Deleted {result.deleted_count} dialogs"}), 200
+    else:
+        return jsonify({"message": "No dialogs to delete"}), 404
+
+
+@app.route("/prompts", methods=['GET'])
+@token_required
+def prompts(current_user):
+    prompts = prompts_collection.find({})
+    prompts = list(prompts)
+
+    return jsonify({'prompts': dumps(prompts)})
 
 
 if __name__ == '__main__':

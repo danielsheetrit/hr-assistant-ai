@@ -21,4 +21,4 @@ def get_dialog_subject(question):
         temperature=0.6,
         max_tokens=20
     )
-    return response.choices[0].text.strip(' "').strip()
+    return response.choices[0].text.strip('""').strip()

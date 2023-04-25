@@ -13,5 +13,8 @@ def initialize_db(app):
     db = client["hr_assistant"]
     dialogs_collection = db["dialogs"]
     users_collection = db["users"]
+    prompts_collection = db["prompts"]
 
-    return {"dialogs_coll": dialogs_collection, "users_coll": users_collection}
+    return {"dialogs_coll": dialogs_collection,
+            "users_coll": users_collection,
+            "prompts_coll": prompts_collection}
