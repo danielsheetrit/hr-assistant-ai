@@ -7,9 +7,9 @@ load_dotenv()
 class Config(object):
     DEBUG = False
     TESTING = False
-    OPEN_AI_SECRET = os.getenv('OPEN_AI_SECRET')
-    MONGO_URI = os.getenv('MONGO_URI')
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
+    OPEN_AI_SECRET = os.environ['OPEN_AI_SECRET']
+    MONGO_URI = os.environ['MONGO_URI']
+    JWT_SECRET_KEY = os.environ['JWT_SECRET_KEY']
 
 
 class ProductionConfig(Config):
@@ -24,6 +24,9 @@ class StagingConfig(Config):
 class DevelopmentConfig(Config):
     DEVELOPMENT = True
     DEBUG = True
+    OPEN_AI_SECRET = os.getenv('OPEN_AI_SECRET')
+    MONGO_URI = os.getenv('MONGO_URI')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
 
 
 class TestingConfig(Config):
