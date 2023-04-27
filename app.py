@@ -3,7 +3,6 @@ from validations import chat_validations
 from chat import get_chat, get_dialog_subject
 from system_prompt import hr_prompt
 from controllers.dialog import Dialog
-from config import Config
 from flask_bcrypt import Bcrypt
 from datetime import datetime, timedelta
 from bson.json_util import dumps
@@ -12,12 +11,10 @@ from bson import ObjectId
 from flask import Flask, jsonify, request
 import openai
 import jwt
-import logging
-import sys
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 app = Flask(__name__)
-app.config.from_object(Config)
+# app.config.from_object(Config)
+app.config.from_pyfile('settings.py')
 
 bcrypt = Bcrypt(app)
 openai.api_key = app.config['OPEN_AI_SECRET']
