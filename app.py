@@ -13,7 +13,6 @@ import openai
 import jwt
 
 app = Flask(__name__)
-# app.config.from_object(Config)
 app.config.from_pyfile('settings.py')
 
 bcrypt = Bcrypt(app)
@@ -38,13 +37,17 @@ def token_required(f):
             return jsonify({'msg': 'Token is missing.'}), 401
 
         try:
+            print('before decode')
             data = jwt.decode(
                 token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
-            current_user = users_collection.find_one(
-                {'_id': ObjectId(data['user_id'])})
-        except:
-            return jsonify({'msg': 'Invalid token.'}), 401
+            print('after decode', )
+        except Exception as e:
+            return jsonify({'msg': 'Invalid token. error:' + str(e)}), 401
 
+        current_user = users_collection.find_one(
+            {'_id': ObjectId(data['user_id'])})
+
+        print('cu', current_user)
         return f(current_user, *args, **kwargs)
 
     return decorated
