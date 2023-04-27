@@ -1,6 +1,6 @@
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
-
+from pymongo.write_concern import WriteConcern
 
 def initialize_db(app):
     client = MongoClient(app.config['MONGO_URI'], server_api=ServerApi('1'))
@@ -11,7 +11,7 @@ def initialize_db(app):
         print(e)
 
     db = client["hr_assistant"]
-    db.write_concern = {'w': 'majority'}
+    db = db.with_options(write_concern=WriteConcern(w='majority'))
     dialogs_collection = db["dialogs"]
     users_collection = db["users"]
     prompts_collection = db["prompts"]
