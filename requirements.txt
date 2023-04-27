@@ -2,5 +2,5 @@ Flask
 python-dotenv
 openai
 pymongo
-jwt
+PyJWT
 Flask-Bcrypt
