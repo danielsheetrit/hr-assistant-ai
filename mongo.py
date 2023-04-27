@@ -11,6 +11,7 @@ def initialize_db(app):
         print(e)
 
     db = client["hr_assistant"]
+    db.write_concern = {'w': 'majority'}
     dialogs_collection = db["dialogs"]
     users_collection = db["users"]
     prompts_collection = db["prompts"]

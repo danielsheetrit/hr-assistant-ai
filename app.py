@@ -37,16 +37,12 @@ def token_required(f):
             return jsonify({'msg': 'Token is missing.'}), 401
 
         try:
-            print('before decode')
-            print(app.config['JWT_SECRET_KEY'])
             data = jwt.decode(
                 token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
-            print('after decode', )
+            current_user = users_collection.find_one(
+                {'_id': ObjectId(data['user_id'])})
         except Exception as e:
             return jsonify({'msg': 'Invalid token. error:' + str(e)}), 401
-
-        current_user = users_collection.find_one(
-            {'_id': ObjectId(data['user_id'])})
 
         print('cu', current_user)
         return f(current_user, *args, **kwargs)
