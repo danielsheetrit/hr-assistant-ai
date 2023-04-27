@@ -38,6 +38,7 @@ def token_required(f):
 
         try:
             print('before decode')
+            print(app.config['JWT_SECRET_KEY'])
             data = jwt.decode(
                 token, app.config['JWT_SECRET_KEY'], algorithms=["HS256"])
             print('after decode', )
