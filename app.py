@@ -9,10 +9,12 @@ from bson.json_util import dumps
 from functools import wraps
 from bson import ObjectId
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 import openai
 import jwt
 
 app = Flask(__name__)
+cors = CORS(app)
 app.config.from_pyfile('settings.py')
 
 bcrypt = Bcrypt(app)

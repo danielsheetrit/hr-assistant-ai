@@ -4,3 +4,4 @@ openai
 pymongo
 PyJWT
 Flask-Bcrypt
+flask-cors
