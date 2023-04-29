@@ -46,7 +46,6 @@ def token_required(f):
         except Exception as e:
             return jsonify({'msg': 'Invalid token. error:' + str(e)}), 401
 
-        print('cu', current_user)
         return f(current_user, *args, **kwargs)
 
     return decorated
@@ -117,7 +116,7 @@ def login():
 @app.route('/user-by-id', methods=['GET'])
 @token_required
 def getUserById(current_user):
-    return jsonify({"user": current_user})
+    return jsonify({"user": dumps(current_user)})
 
 
 @app.route('/chat/initialize', methods=['GET'])
