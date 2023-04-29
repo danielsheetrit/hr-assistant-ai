@@ -114,6 +114,12 @@ def login():
     return jsonify({'token': token, 'user': dumps(user)}), 200
 
 
+@app.route('/user-by-id', methods=['GET'])
+@token_required
+def getUserById(current_user):
+    return jsonify({"user": current_user})
+
+
 @app.route('/chat/initialize', methods=['GET'])
 @token_required
 def chat_initialize(current_user):
