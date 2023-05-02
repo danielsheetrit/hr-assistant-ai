@@ -154,9 +154,15 @@ def chat_initialize(current_user):
 
     # applying the answer
     dialog.add_message(role="assistant", content=answer)
-    dialogs_collection.insert_one(dialog.to_dict())
 
-    return jsonify({"chat": dialog.chat})
+    try:
+        res = dialogs_collection.insert_one(dialog.to_dict())
+        dialog_data = dialogs_collection.find_one(
+            {"_id": ObjectId(res.inserted_id)})
+    except Exception as e:
+        return jsonify({"msg": "MongoDB Error: \n" + str(e)}), 500
+
+    return jsonify({"dialog": dumps(dialog_data)})
 
 
 @app.route('/chat', methods=['GET'])
@@ -182,8 +188,8 @@ def chat(current_user):
 
     messages = dialog_data["chat"]
 
-    dialog = Dialog(user_id="not_important",
-                    title="not_important", chat=messages)
+    dialog = Dialog(user_id="somthing",
+                    title="somthing", chat=messages)
     dialog.add_message(role="user", content=question)
 
     # openai logic
@@ -199,12 +205,13 @@ def chat(current_user):
 
     # apply answer
     dialog.add_message(role="assistant", content=answer)
-    dialogs_collection.update_one(
+
+    updated = dialogs_collection.find_one_and_update(
         {"_id": ObjectId(dialog_id)},
         {"$set": {"chat": dialog.chat, "last_msg": datetime.now()}}
     )
 
-    return jsonify({'chat': dialog.chat})
+    return jsonify({'dialog': dumps(updated)})
 
 
 @app.route("/dialogs", methods=['GET'])
