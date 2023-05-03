@@ -7,5 +7,6 @@ Please consider changing your prompt to avoid repetition and add variation to th
 '''
 
 subject_prompt = '''Your job is to create a title
-made out of maximum 5 words according the text below.
-I remind you again that your answer will be maximum 5 words!: '''
+made out of maximum 5 words according to the text below.
+I remind you again that your answer will be maximum 5 words and
+should not contain any double quotes!: '''

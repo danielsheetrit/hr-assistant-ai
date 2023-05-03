@@ -213,24 +213,68 @@ def chat(current_user):
 
     return jsonify({'dialog': dumps(updated)})
 
+# --------------------------------------------------------------------
+
+
+@app.route("/dialog", methods=['GET'])
+@token_required
+def get_dialog(current_user):
+    # Get the dialog_id from request arguments
+    dialog_id = request.args.get('dialog_id')
+
+    if not dialog_id:
+        return jsonify({"message": "No dialog_id provided"}), 400
+
+    # Find the dialog with the given dialog_id and user_id
+    dialog = dialogs_collection.find_one(
+        {"_id": ObjectId(dialog_id), "user_id": current_user["_id"]})
+
+    if not dialog:
+        return jsonify({"message": "No dialog found with the specified dialog_id"}), 404
+
+    return jsonify({"dialog": dumps(dialog)})
+
 
 @app.route("/dialogs", methods=['GET'])
 @token_required
 def dialogs(current_user):
-    dialogs = dialogs_collection.find(
-        {"user_id": ObjectId(current_user["_id"])})
-    dialogs = list(dialogs)
-    return jsonify({'dialogs': dumps(dialogs)})
+    pipeline = [
+        {"$match": {"user_id": ObjectId(current_user["_id"])}},
+        {"$project": {
+            "_id": {"$toString": "$_id"},
+            "title": 1,
+            "last_msg": 1,
+            "chat_color": 1
+        }},
+        {"$addFields": {
+            "last_msg": {"$dateToString": {"format": "%Y-%m-%dT%H:%M:%S.%LZ", "date": "$last_msg"}}
+        }}
+    ]
+    dialogs_cursor = dialogs_collection.aggregate(pipeline)
+    dialogs = list(dialogs_cursor)
+
+    return jsonify({'dialogs': dialogs})
 
 
 @app.route("/dialogs", methods=['DELETE'])
 @token_required
 def delete_dialogs(current_user):
-    result = dialogs_collection.delete_many({"user_id": current_user["_id"]})
-    if result.deleted_count > 0:
-        return jsonify({"message": f"Deleted {result.deleted_count} dialogs"}), 200
+    # Get the dialog_id from request arguments, if provided
+    dialog_id = request.args.get('dialog_id')
+
+    if dialog_id:
+        # Delete the specific dialog with the given dialog_id
+        result = dialogs_collection.delete_one(
+            {"_id": ObjectId(dialog_id), "user_id": current_user["_id"]})
     else:
-        return jsonify({"message": "No dialogs to delete"}), 404
+        # Delete all dialogs associated with the client's user_id
+        result = dialogs_collection.delete_many(
+            {"user_id": current_user["_id"]})
+
+    if result.deleted_count <= 0:
+        return jsonify({"message": "No dialog found with the specified dialog_id"}), 404
+
+    return jsonify({"msg": "Deleted successfully"})
 
 
 @app.route("/prompts", methods=['GET'])
