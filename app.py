@@ -256,23 +256,24 @@ def dialogs(current_user):
     return jsonify({'dialogs': dialogs})
 
 
-@app.route("/dialogs", methods=['DELETE'])
+@app.route("/dialogs-delete", methods=['DELETE'])
 @token_required
-def delete_dialogs(current_user):
-    # Get the dialog_id from request arguments, if provided
-    dialog_id = request.args.get('dialog_id')
+def bulk_delete_dialogs(current_user):
+    # Get the array of _ids from request JSON data
+    data = request.get_json()
+    dialogs_ids = data['dialogs_ids']
 
-    if dialog_id:
-        # Delete the specific dialog with the given dialog_id
-        result = dialogs_collection.delete_one(
-            {"_id": ObjectId(dialog_id), "user_id": current_user["_id"]})
-    else:
-        # Delete all dialogs associated with the client's user_id
-        result = dialogs_collection.delete_many(
-            {"user_id": current_user["_id"]})
+    if not dialogs_ids:
+        return jsonify({"message": "No ids provided"}), 400
 
-    if result.deleted_count <= 0:
-        return jsonify({"message": "No dialog found with the specified dialog_id"}), 404
+    # Convert string ids to ObjectId instances
+    object_ids = [ObjectId(_id) for _id in dialogs_ids]
+# Delete all dialogs with matching _ids and user_id
+    try:
+        dialogs_collection.delete_many(
+            {"_id": {"$in": object_ids}, "user_id": current_user["_id"]})
+    except Exception as e:
+        return jsonify({"msg": f"Error deleting dialog, error: {e}"})
 
     return jsonify({"msg": "Deleted successfully"})
 
