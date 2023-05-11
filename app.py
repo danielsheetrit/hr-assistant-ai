@@ -51,11 +51,6 @@ def token_required(f):
     return decorated
 
 
-@app.route('/', methods=['GET'])
-def hello():
-    return jsonify({'msg': 'Hello'})
-
-
 @app.route('/register', methods=['POST'])
 def regsiter():
     data = request.get_json()
@@ -119,12 +114,13 @@ def getUserById(current_user):
     return jsonify({"user": dumps(current_user)})
 
 
-@app.route('/chat/initialize', methods=['GET'])
+@app.route('/chat', methods=['POST'])
 @token_required
 def chat_initialize(current_user):
     # args
-    question = request.args.get("question")
-    answer_length = request.args.get("answer_length")
+    data = request.get_json()
+    question = data['question']
+    answer_length = data['answer_length']
 
     # validations
     res = chat_validations(question, answer_length)
@@ -138,14 +134,22 @@ def chat_initialize(current_user):
     if not title:
         return jsonify({'msg': 'Could not generate a title'}), 500
 
-    dialog = Dialog(user_id=current_user['_id'], title=title, chat=[])
-    dialog.add_message(role="system", content=hr_prompt)
-    dialog.add_message(role="assistant", content="How can I help you today?")
-    dialog.add_message(role="user", content=question)
+    dialog = {
+        "user_id": current_user["_id"],
+        "title": title,
+        "chat": [
+            {"role": "system", "content": hr_prompt,
+             "created_at": datetime.now()},
+            {"role": "assistant", "content": " How can I help you today?",
+             "created_at": datetime.now()},
+            {"role": "user", "content": question,
+             "created_at": datetime.now()}
+        ]
+    }
 
     # openai logic
     copy = []
-    for message in dialog.chat:
+    for message in dialog["chat"]:
         copy.append({"role": message["role"], "content": message["content"]})
     try:
         answer = get_chat(copy, answer_length)
@@ -153,49 +157,43 @@ def chat_initialize(current_user):
         return jsonify({"msg": "Open Ai error, no answer available, Error: \n" + str(e)}), 500
 
     # applying the answer
-    dialog.add_message(role="assistant", content=answer)
+    dialog["chat"].append({"role": "assistant", "content": answer,
+                           "created_at": datetime.now()})
+    dialog["last_msg"] = datetime.now()
 
     try:
-        res = dialogs_collection.insert_one(dialog.to_dict())
-        dialog_data = dialogs_collection.find_one(
-            {"_id": ObjectId(res.inserted_id)})
+        res = dialogs_collection.insert_one(dialog)
     except Exception as e:
         return jsonify({"msg": "MongoDB Error: \n" + str(e)}), 500
 
-    return jsonify({"dialog": dumps(dialog_data)})
+    dialog["_id"] = res.inserted_id
+
+    return jsonify({"dialog": dumps(dialog)})
 
 
-@app.route('/chat', methods=['GET'])
+@app.route('/chat', methods=['PUT'])
 @token_required
 def chat(current_user):
     # args
-    dialog_id = request.args.get('dialog_id')
-    question = request.args.get('question')
-    answer_length = request.args.get('answer_length')
+    data = request.get_json()
+    question = data["question"]
+    dialog = data['dialog']
+    answer_length = data['answer_length']
 
     # validations
-    res = chat_validations(question, answer_length)
-    if res:
-        return jsonify({'msg': res}), 400
+    if not dialog or not answer_length:
+        return jsonify({'msg': 'Dialog arguments was not provided'}), 400
 
-    if not dialog_id:
-        return jsonify({'msg': 'Dialog Id was not provided'}), 400
+    dialog_id = dialog["_id"]
+    messages = dialog["chat"]
 
-    # find the dialog in db
-    dialog_data = dialogs_collection.find_one({"_id": ObjectId(dialog_id)})
-    if not dialog_data:
-        return jsonify({'msg': f'Dialog with id {dialog_id} not found.'}), 500
-
-    messages = dialog_data["chat"]
-
-    dialog = Dialog(user_id="somthing",
-                    title="somthing", chat=messages)
-    dialog.add_message(role="user", content=question)
+    messages.append({"role": "user", "content": question,
+                     "created_at": datetime.now()})
 
     # openai logic
     answer_length = int(answer_length)
     copy = []
-    for message in dialog.chat:
+    for message in messages:
         copy.append({"role": message["role"], "content": message["content"]})
 
     try:
@@ -204,14 +202,18 @@ def chat(current_user):
         return jsonify({'msg': 'Open Ai error, no answer available, Error: \n' + str(e)}), 500
 
     # apply answer
-    dialog.add_message(role="assistant", content=answer)
+    messages.append({"role": "assistant", "content": answer,
+                     "created_at": datetime.now()})
 
-    updated = dialogs_collection.find_one_and_update(
-        {"_id": ObjectId(dialog_id)},
-        {"$set": {"chat": dialog.chat, "last_msg": datetime.now()}}
+    dialogs_collection.update_one(
+        {"_id": ObjectId(dialog_id["$oid"])},
+        {"$set": {"chat": messages, "last_msg": datetime.now()}}
     )
 
-    return jsonify({'dialog': dumps(updated)})
+    dialog["chat"] = messages
+    dialog["last_msg"] = datetime.now()
+
+    return jsonify({'dialog': dumps(dialog)})
 
 # --------------------------------------------------------------------
 
@@ -244,11 +246,12 @@ def dialogs(current_user):
             "_id": {"$toString": "$_id"},
             "title": 1,
             "last_msg": 1,
-            "chat_color": 1
+            "created_at": 1
         }},
         {"$addFields": {
             "last_msg": {"$dateToString": {"format": "%Y-%m-%dT%H:%M:%S.%LZ", "date": "$last_msg"}}
-        }}
+        }},
+        {"$sort": {"created_at": 1}}
     ]
     dialogs_cursor = dialogs_collection.aggregate(pipeline)
     dialogs = list(dialogs_cursor)
@@ -268,7 +271,7 @@ def bulk_delete_dialogs(current_user):
 
     # Convert string ids to ObjectId instances
     object_ids = [ObjectId(_id) for _id in dialogs_ids]
-# Delete all dialogs with matching _ids and user_id
+    # Delete all dialogs with matching _ids and user_id
     try:
         dialogs_collection.delete_many(
             {"_id": {"$in": object_ids}, "user_id": current_user["_id"]})
@@ -276,15 +279,6 @@ def bulk_delete_dialogs(current_user):
         return jsonify({"msg": f"Error deleting dialog, error: {e}"})
 
     return jsonify({"msg": "Deleted successfully"})
-
-
-@app.route("/prompts", methods=['GET'])
-@token_required
-def prompts(current_user):
-    prompts = prompts_collection.find({})
-    prompts = list(prompts)
-
-    return jsonify({'prompts': dumps(prompts)})
 
 
 if __name__ == '__main__':

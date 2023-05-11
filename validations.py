@@ -1,6 +1,3 @@
-from flask import jsonify
-
-
 def chat_validations(question, answer_length):
     res = None
 
